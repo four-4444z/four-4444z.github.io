@@ -73,7 +73,9 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(dashboardHtml, /id="dashboard-browser-refresh"/);
   assert.match(dashboardHtml, /id="dashboard-browser-open-tab"/);
   assert.match(dashboardHtml, /id="dashboard-browser-address-form"/);
-  assert.match(dashboardHtml, /LAST UPDATED:/);
+  assert.match(dashboardHtml, /CORE_SEARCH v1\.3\.2/);
+  assert.match(dashboardHtml, /2026-11-01/);
+  assert.match(dashboardHtml, /RUN BY THE SHADOW NETWORK/);
   assert.match(dashboardHtml, /suggestions\.html/);
   assert.match(dashboardHtml, /href="about\.html">ABOUT/);
   const dashboardNav = dashboardHtml.match(/<nav\b[\s\S]*?<\/nav>/)[0];
@@ -86,7 +88,7 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(settingsPage, /href="about\.html">ABOUT/);
   assert.match(settingsPage, /script\.js\?v=20261101-3/);
   const suggestionsHtml = await (await fetch(`${baseUrl}/suggestions.html`, { headers })).text();
-  assert.match(suggestionsHtml, /class="search-dashboard search-subpage"/);
+  assert.match(suggestionsHtml, /class="search-dashboard search-subpage has-global-footer"/);
   assert.match(suggestionsHtml, /id="suggestion-form"/);
   assert.match(suggestionsHtml, /href="about\.html">ABOUT/);
   assert.match(suggestionsHtml, /runtime-config\.js\?v=20261101-2/);
@@ -122,9 +124,9 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(suggestionScript, /Waking the suggestions service/);
   assert.match(suggestionScript, /window\.location\.origin/);
   assert.match(suggestionScript, /isLocalSite/);
-  assert.match(suggestionsHtml, /LAST UPDATED:/);
+  assert.match(suggestionsHtml, /CORE_SEARCH v1\.3\.2/);
   const settingsHtml = await (await fetch(`${baseUrl}/settings.html`, { headers })).text();
-  assert.match(settingsHtml, /class="search-dashboard search-subpage"/);
+  assert.match(settingsHtml, /class="search-dashboard search-subpage has-global-footer"/);
   assert.match(settingsHtml, /id="search-engine"/);
   assert.match(settingsHtml, /id="browser-profile"/);
   assert.match(settingsHtml, /id="theme-hex"/);
@@ -140,11 +142,22 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   const aboutResponse = await fetch(`${baseUrl}/about.html`, { headers });
   const aboutHtml = await aboutResponse.text();
   assert.equal(aboutResponse.status, 200);
-  assert.match(aboutHtml, /class="search-dashboard search-subpage"/);
+  assert.match(aboutHtml, /class="search-dashboard search-subpage has-global-footer"/);
   assert.match(aboutHtml, /ABOUT CORE_SEARCH/);
   assert.match(aboutHtml, /full-page Rammerhead tab/);
   assert.match(aboutHtml, /embedded Scramjet browser/);
   assert.match(aboutHtml, /suggestions\.html/);
+  for (const page of [
+    '/index.html', '/apply.html', '/main.html', '/about.html', '/settings.html',
+    '/suggestions.html', '/shadow-core.html', '/shadow-login.html',
+    '/terminal.html', '/vault.html', '/vault-login.html',
+    '/rammerhead-launch.html', '/scramjet-embed.html'
+  ]) {
+    const html = fs.readFileSync(page.slice(1), 'utf8');
+    assert.match(html, /CORE_SEARCH v1\.3\.2/, `${page} includes the current version`);
+    assert.match(html, /2026-11-01|NOVEMBER 1, 2026/, `${page} includes the release date`);
+    assert.match(html, /RUN BY THE SHADOW NETWORK/, `${page} includes the network credit`);
+  }
   for (const page of ['/browser.html', '/browser.js', '/youtube.html', '/chat.html', '/strongdog.html', '/games.html', '/entertainment.html']) {
     assert.equal((await fetch(`${baseUrl}${page}`)).status, 404, `${page} should be removed`);
   }
