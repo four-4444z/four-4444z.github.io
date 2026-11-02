@@ -27,7 +27,7 @@
     <section class="settings-panel">
       <p class="search-kicker"><span class="online-indicator"></span> PERSONALIZE YOUR EXPERIENCE</p>
       <h1>SETTINGS</h1>
-      <p class="settings-description">Customize search, theme, appearance, and your quick-exit shortcut.</p>
+      <p class="settings-description">Customize search, browser performance, theme, appearance, and your quick-exit shortcut.</p>
       <form id="search-settings-form">
         <label class="settings-label" for="search-engine">DEFAULT SEARCH ENGINE</label>
         <select id="search-engine" name="search-engine">
@@ -35,6 +35,16 @@
           <option value="google">Google</option>
           <option value="bing">Bing</option>
         </select>
+
+        <label class="settings-label" for="browser-profile">BROWSER YOU USE</label>
+        <select id="browser-profile" name="browser-profile">
+          <option value="chrome">Chrome</option>
+          <option value="safari">Safari</option>
+          <option value="firefox">Firefox</option>
+          <option value="edge">Edge</option>
+          <option value="other">Other / balanced</option>
+        </select>
+        <p class="theme-help">Saved on this device. This tunes how long CORE_SEARCH waits and retries while connecting to Scramjet.</p>
 
         <fieldset class="theme-fieldset">
           <legend class="settings-label">ACCENT COLOR</legend>
@@ -96,6 +106,6 @@
     </footer>
   </main>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=20261101-1"></script>
 </body>
 </html>

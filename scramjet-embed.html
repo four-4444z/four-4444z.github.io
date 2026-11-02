@@ -101,7 +101,7 @@
           frame.frame.title = destination.hostname;
           frame.go(destination.href);
           loadTimeout = window.setTimeout(() => {
-            status.textContent = 'Still waiting for the page. If it remains blank, Safari may be blocking the embedded browser connection.';
+            status.textContent = 'This page is taking longer than expected. The browser service or destination may be unavailable; try Refresh or open the page in a full browser tab.';
           }, 15000);
         };
         document.getElementById('browser-bar').addEventListener('submit', (event) => {

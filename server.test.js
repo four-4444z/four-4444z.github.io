@@ -57,7 +57,7 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(dashboardHtml, /id="bookmark-add"/);
   assert.match(dashboardHtml, /id="bookmark-form"/);
   assert.match(dashboardHtml, /runtime-config\.js\?v=20261012-9/);
-  assert.match(dashboardHtml, /script\.js\?v=20261012-9/);
+  assert.match(dashboardHtml, /script\.js\?v=20261101-1/);
   assert.match(dashboardHtml, /style\.css\?v=20261012-9/);
   assert.match(dashboardHtml, /id="search-status"/);
   assert.match(dashboardHtml, /THROUGH SCRAMJET/);
@@ -78,13 +78,16 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.doesNotMatch(dashboardHtml, /href="browser\.html"/);
   assert.doesNotMatch(dashboardNav, /id="mobile-menu"/);
   assert.match(dashboardHtml, /matrix-canvas/);
-  assert.match(await (await fetch(`${baseUrl}/settings.html`, { headers })).text(), /id="search-engine"/);
+  const settingsPage = await (await fetch(`${baseUrl}/settings.html`, { headers })).text();
+  assert.match(settingsPage, /id="search-engine"/);
+  assert.match(settingsPage, /id="browser-profile"/);
+  assert.match(settingsPage, /script\.js\?v=20261101-1/);
   const suggestionsHtml = await (await fetch(`${baseUrl}/suggestions.html`, { headers })).text();
   assert.match(suggestionsHtml, /class="search-dashboard search-subpage"/);
   assert.match(suggestionsHtml, /id="suggestion-form"/);
   assert.match(suggestionsHtml, /runtime-config\.js\?v=20261012-9/);
   assert.match(suggestionsHtml, /script\.js\?v=20261012-9/);
-  assert.match(suggestionsHtml, /suggestions\.js\?v=20261012-3/);
+  assert.match(suggestionsHtml, /suggestions\.js\?v=20261101-3/);
   const runtimeConfig = await (await fetch(`${baseUrl}/runtime-config.js`, { headers })).text();
   assert.match(runtimeConfig, /SYSTEM_CORE_SCRAMJET_URL/);
   assert.match(runtimeConfig, /core-search-4444z-scramjet\.onrender\.com/);
@@ -100,10 +103,17 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   const browserScript = await (await fetch(`${baseUrl}/script.js`, { headers })).text();
   assert.match(browserScript, /scramjet-embed\.html/);
   assert.match(browserScript, /wispUrl\.href/);
+  assert.match(browserScript, /waitForScramjetService/);
+  const suggestionScript = await (await fetch(`${baseUrl}/suggestions.js`, { headers })).text();
+  assert.match(suggestionScript, /waitForSuggestionsService/);
+  assert.match(suggestionScript, /Waking the suggestions service/);
+  assert.match(suggestionScript, /window\.location\.origin/);
+  assert.match(suggestionScript, /isLocalSite/);
   assert.match(suggestionsHtml, /LAST UPDATED:/);
   const settingsHtml = await (await fetch(`${baseUrl}/settings.html`, { headers })).text();
   assert.match(settingsHtml, /class="search-dashboard search-subpage"/);
   assert.match(settingsHtml, /id="search-engine"/);
+  assert.match(settingsHtml, /id="browser-profile"/);
   assert.match(settingsHtml, /id="theme-hex"/);
   assert.match(settingsHtml, /id="panic-key"/);
   assert.match(settingsHtml, /id="panic-url"/);
@@ -330,18 +340,23 @@ test('serves the isolated Scramjet browser and runtime locally', async () => {
   const scramjet = await startScramjetServer(0);
   const base = `http://${scramjet.host}:${scramjet.port}`;
   try {
-    const [health, embed, worker, runtime] = await Promise.all([
+    const [health, localHealth, deniedHealth, embed, worker, runtime] = await Promise.all([
       fetch(`${base}/health`),
+      fetch(`${base}/health`, { headers: { origin: 'http://127.0.0.1:5000' } }),
+      fetch(`${base}/health`, { headers: { origin: 'https://attacker.example' } }),
       fetch(`${base}/embed.html`),
       fetch(`${base}/scramjet-sw.js`),
       fetch(`${base}/scram/scramjet.all.js`)
     ]);
     assert.deepEqual(await health.json(), { status: 'ok' });
+    assert.equal(localHealth.headers.get('access-control-allow-origin'), 'http://127.0.0.1:5000');
+    assert.equal(deniedHealth.headers.get('access-control-allow-origin'), null);
     assert.equal(embed.status, 200);
     const embedHtml = await embed.text();
     assert.match(embedHtml, /new ScramjetController/);
     assert.match(embedHtml, /id="browser-bar"/);
-    assert.match(embedHtml, /Still waiting for the page/);
+    assert.match(embedHtml, /taking longer than expected/);
+    assert.doesNotMatch(embedHtml, /Safari may be blocking/);
     assert.equal(worker.status, 200);
     assert.match(await worker.text(), /ScramjetServiceWorker/);
     assert.equal(runtime.status, 200);

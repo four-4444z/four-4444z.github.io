@@ -30,3 +30,5 @@ services:
         value: 22.20.0
       - key: HOST
         value: 0.0.0.0
+      - key: PUBLIC_SITE_ORIGIN
+        value: https://four-4444z.github.io

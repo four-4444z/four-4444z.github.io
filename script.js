@@ -4,12 +4,20 @@ const SEARCH_ENGINES = {
   bing: { label: 'BING', url: 'https://www.bing.com/search?q=' }
 };
 const SEARCH_ENGINE_STORAGE_KEY = 'coreSearchEngine';
+const BROWSER_PROFILE_STORAGE_KEY = 'coreSearchBrowserProfile';
 const BOOKMARKS_STORAGE_KEY = 'coreSearchBookmarks';
 const THEME_COLOR_STORAGE_KEY = 'coreSearchThemeColor';
 const APPEARANCE_STORAGE_KEY = 'coreSearchAppearance';
 const PANIC_KEY_STORAGE_KEY = 'coreSearchPanicKey';
 const PANIC_URL_STORAGE_KEY = 'coreSearchPanicUrl';
 const DEFAULT_THEME_COLOR = '#61f99b';
+const BROWSER_PROFILES = {
+  chrome: { requestTimeout: 8000, retryInterval: 2000, startupTimeout: 90000 },
+  safari: { requestTimeout: 15000, retryInterval: 4000, startupTimeout: 90000 },
+  firefox: { requestTimeout: 10000, retryInterval: 3000, startupTimeout: 75000 },
+  edge: { requestTimeout: 8000, retryInterval: 2000, startupTimeout: 90000 },
+  other: { requestTimeout: 10000, retryInterval: 3000, startupTimeout: 90000 }
+};
 
 function normalizePanicKey(key) {
   return key === ' ' ? 'space' : key.toLowerCase();
@@ -52,6 +60,7 @@ window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ()
 const searchSettingsForm = document.getElementById('search-settings-form');
 if (searchSettingsForm) {
   const engineSelect = document.getElementById('search-engine');
+  const browserProfileSelect = document.getElementById('browser-profile');
   const hexInput = document.getElementById('theme-hex');
   const colorPicker = document.getElementById('theme-color-picker');
   const panicUrlInput = document.getElementById('panic-url');
@@ -62,6 +71,7 @@ if (searchSettingsForm) {
   const settingsFeedback = document.getElementById('settings-feedback');
   const savedColor = getSavedThemeColor();
   engineSelect.value = getSearchEngine();
+  browserProfileSelect.value = getBrowserProfile();
   hexInput.value = savedColor;
   colorPicker.value = savedColor;
   panicUrlInput.value = localStorage.getItem(PANIC_URL_STORAGE_KEY) || '';
@@ -125,6 +135,10 @@ if (searchSettingsForm) {
       settingsFeedback.textContent = 'Choose a valid search engine.';
       return;
     }
+    if (!Object.hasOwn(BROWSER_PROFILES, browserProfileSelect.value)) {
+      settingsFeedback.textContent = 'Choose a valid browser profile.';
+      return;
+    }
     const appearance = searchSettingsForm.elements.appearance.value;
     if (!['dark', 'light', 'system'].includes(appearance)) {
       settingsFeedback.textContent = 'Choose a valid appearance.';
@@ -151,6 +165,7 @@ if (searchSettingsForm) {
     }
 
     localStorage.setItem(SEARCH_ENGINE_STORAGE_KEY, engineSelect.value);
+    localStorage.setItem(BROWSER_PROFILE_STORAGE_KEY, browserProfileSelect.value);
     localStorage.setItem(THEME_COLOR_STORAGE_KEY, color);
     localStorage.setItem(APPEARANCE_STORAGE_KEY, appearance);
     localStorage.setItem(PANIC_KEY_STORAGE_KEY, panicKey);
@@ -226,6 +241,11 @@ function getSearchEngine() {
   return SEARCH_ENGINES[savedEngine] ? savedEngine : 'duckduckgo';
 }
 
+function getBrowserProfile() {
+  const savedProfile = localStorage.getItem(BROWSER_PROFILE_STORAGE_KEY);
+  return Object.hasOwn(BROWSER_PROFILES, savedProfile) ? savedProfile : 'other';
+}
+
 const searchForm = document.getElementById('search-form');
 const activeSearchEngine = document.getElementById('active-search-engine');
 if (activeSearchEngine) {
@@ -264,6 +284,8 @@ let activeBrowserTabId = null;
 let nextBrowserTabId = 0;
 let scramjetBaseUrl = null;
 let scramjetReady;
+let scramjetHealthCheck = null;
+let scramjetHealthCheckedAt = 0;
 const systemCoreApiUrl = (window.SYSTEM_CORE_API_URL || '').replace(/\/+$/, '');
 const systemCoreScramjetUrl = window.SYSTEM_CORE_SCRAMJET_URL || '';
 
@@ -271,13 +293,14 @@ function createScramjetEmbedUrl(destination) {
   if (!scramjetBaseUrl) throw new Error('The embedded browser service is unavailable.');
   if (systemCoreScramjetUrl) {
     const embedUrl = new URL('/scramjet-embed.html', window.location.origin);
+    embedUrl.searchParams.set('v', '20261101-1');
     const wispUrl = new URL('/wisp/', systemCoreScramjetUrl);
     wispUrl.protocol = wispUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     embedUrl.searchParams.set('url', destination);
     embedUrl.searchParams.set('wisp', wispUrl.href);
     return embedUrl.href;
   }
-  return `${scramjetBaseUrl}/embed.html?url=${encodeURIComponent(destination)}`;
+  return `${scramjetBaseUrl}/embed.html?v=20261101-1&url=${encodeURIComponent(destination)}`;
 }
 
 function updateBrowserNavigationControls() {
@@ -403,10 +426,12 @@ clearBrowserTabsButton?.addEventListener('click', () => {
 
 async function openWithScramjet(query, tab, historyIndex = null) {
   const destination = resolveSearchDestination(query);
-  browserStatus.textContent = 'Opening embedded browser...';
+  browserStatus.textContent = 'Connecting to the embedded browser service...';
   try {
     await scramjetReady;
     if (!scramjetBaseUrl) throw new Error('The embedded browser service is unavailable.');
+    browserStatus.textContent = 'Waking the embedded browser service if needed...';
+    await ensureScramjetServiceReady(scramjetBaseUrl);
     if (!browserTabs.includes(tab)) throw new Error('This browser tab was closed.');
     tab.label = new URL(destination).hostname;
     tab.url = destination;
@@ -610,11 +635,25 @@ browserRefreshButton?.addEventListener('click', async () => {
   }
 });
 
-browserOpenTabButton?.addEventListener('click', () => {
+browserOpenTabButton?.addEventListener('click', async () => {
   const tab = browserTabs.find(({ id }) => id === activeBrowserTabId);
   if (!tab?.url) return;
-  const openedWindow = window.open(createScramjetEmbedUrl(tab.url), '_blank');
-  if (openedWindow) openedWindow.opener = null;
+  const openedWindow = window.open('about:blank', '_blank');
+  if (!openedWindow) {
+    browserStatus.textContent = 'Allow pop-ups to open this page in a full browser tab.';
+    return;
+  }
+  openedWindow.opener = null;
+  try {
+    browserStatus.textContent = 'Connecting to the embedded browser service...';
+    await scramjetReady;
+    if (!scramjetBaseUrl) throw new Error('The embedded browser service is unavailable.');
+    await ensureScramjetServiceReady(scramjetBaseUrl);
+    if (!openedWindow.closed) openedWindow.location.replace(createScramjetEmbedUrl(tab.url));
+  } catch (error) {
+    if (!openedWindow.closed) openedWindow.close();
+    browserStatus.textContent = error.message;
+  }
 });
 
 document.getElementById('dashboard-browser-home')?.addEventListener('click', () => {
@@ -644,6 +683,57 @@ browserAddressForm?.addEventListener('submit', async (event) => {
   }
 });
 
+async function waitForScramjetService(serviceUrl) {
+  const profile = BROWSER_PROFILES[getBrowserProfile()];
+  const deadline = Date.now() + profile.startupTimeout;
+  const healthUrl = new URL('/health', serviceUrl);
+  let lastError = new Error('The service did not respond.');
+
+  while (Date.now() < deadline) {
+    const remaining = deadline - Date.now();
+    const controller = new AbortController();
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      Math.min(profile.requestTimeout, remaining)
+    );
+    try {
+      const response = await fetch(healthUrl, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      if (response.ok) return;
+      lastError = new Error(`The service returned HTTP ${response.status}.`);
+    } catch (error) {
+      lastError = error.name === 'AbortError'
+        ? new Error('The service health check timed out.')
+        : error;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+
+    const delay = Math.min(profile.retryInterval, deadline - Date.now());
+    if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
+  }
+
+  throw new Error(
+    `The embedded browser service did not become ready within ${profile.startupTimeout / 1000} seconds. ${lastError.message}`
+  );
+}
+
+function ensureScramjetServiceReady(serviceUrl) {
+  if (Date.now() - scramjetHealthCheckedAt < 30000) return Promise.resolve();
+  if (!scramjetHealthCheck) {
+    scramjetHealthCheck = waitForScramjetService(serviceUrl)
+      .then(() => {
+        scramjetHealthCheckedAt = Date.now();
+      })
+      .finally(() => {
+        scramjetHealthCheck = null;
+      });
+  }
+  return scramjetHealthCheck;
+}
+
 scramjetReady = (systemCoreScramjetUrl
   ? Promise.resolve({ scramjetUrl: systemCoreScramjetUrl })
   : fetch(`${systemCoreApiUrl}/health`).then((response) => {
@@ -663,11 +753,10 @@ scramjetReady = (systemCoreScramjetUrl
         throw new Error('The embedded browser service is unavailable.');
       }
       return scramjetBaseUrl;
-    })
-    .catch((error) => {
-      if (browserStatus) browserStatus.textContent = error.message;
-      return null;
     });
+void scramjetReady.catch((error) => {
+  if (browserStatus) browserStatus.textContent = error.message;
+});
 
 if (searchForm) {
   const searchQuery = document.getElementById('search-query');

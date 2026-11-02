@@ -10,6 +10,7 @@ import { server as wisp } from '@mercuryworkshop/wisp-js/server';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const HOST = process.env.HOST || '127.0.0.1';
+const PUBLIC_SITE_ORIGIN = process.env.PUBLIC_SITE_ORIGIN || '';
 
 wisp.options.allow_udp_streams = false;
 wisp.options.allow_private_ips = false;
@@ -42,7 +43,24 @@ app.get('/scramjet-sw.js', async (_request, reply) => {
   return readFile(new URL('./scramjet-sw.js', import.meta.url));
 });
 
-app.get('/health', async () => ({ status: 'ok' }));
+app.get('/health', async (request, reply) => {
+  const requestOrigin = request.headers.origin;
+  const isLocalOrigin = (() => {
+    if (!requestOrigin) return false;
+    try {
+      const origin = new URL(requestOrigin);
+      return origin.protocol === 'http:' &&
+        ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname);
+    } catch {
+      return false;
+    }
+  })();
+  if (requestOrigin && (requestOrigin === PUBLIC_SITE_ORIGIN || isLocalOrigin)) {
+    reply.header('access-control-allow-origin', requestOrigin);
+    reply.header('vary', 'Origin');
+  }
+  return { status: 'ok' };
+});
 
 app.register(fastifyStatic, {
   root: scramjetPath,
