@@ -8,12 +8,23 @@ const scramjetUrl = process.env.SCRAMJET_URL ||
   (scramjetHost
     ? `https://${scramjetHost.endsWith('.onrender.com') ? scramjetHost : `${scramjetHost}.onrender.com`}`
     : '');
+const rammerheadHost = process.env.RAMMERHEAD_HOST;
+const rammerheadUrl = process.env.RAMMERHEAD_URL ||
+  (rammerheadHost
+    ? `https://${rammerheadHost.endsWith('.onrender.com') ? rammerheadHost : `${rammerheadHost}.onrender.com`}`
+    : '');
+const RAMMERHEAD_PORT = Number(process.env.RAMMERHEAD_PORT || 8082);
 
 async function start() {
   let scramjet;
+  let rammerhead;
   if (!scramjetUrl) {
     const { startScramjetServer } = await import('./scramjet-server.mjs');
     scramjet = await startScramjetServer(SCRAMJET_PORT);
+  }
+  if (!rammerheadUrl) {
+    const { startRammerhead } = require('./rammerhead-start');
+    rammerhead = startRammerhead({ host: HOST, port: RAMMERHEAD_PORT });
   }
   const systemCore = createServer(undefined, {
     ...(scramjetUrl ? {
@@ -29,15 +40,18 @@ async function start() {
     });
   } catch (error) {
     if (scramjet) await scramjet.close();
+    rammerhead?.close();
     throw error;
   }
 
   console.log(`SYSTEM_CORE is running at http://${HOST}:${PORT}`);
   if (scramjet) console.log(`Scramjet is running at http://${HOST}:${SCRAMJET_PORT}`);
+  if (rammerhead) console.log(`Rammerhead is running at http://${HOST}:${RAMMERHEAD_PORT}`);
 
   const shutdown = () => {
     systemCore.close((error) => {
       if (error) console.error(`Unable to stop SYSTEM_CORE: ${error.message}`);
+      rammerhead?.close();
       scramjet?.close().catch((closeError) => {
         console.error(`Unable to stop Scramjet: ${closeError.message}`);
       });

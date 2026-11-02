@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "setup:scramjet": "npm install",
+    "setup:rammerhead": "npm --prefix rammerhead install",
     "copy:scramjet-client": "node scripts/copy-scramjet-client.mjs",
     "start": "node start.js",
     "start:scramjet": "node scramjet-start.mjs"

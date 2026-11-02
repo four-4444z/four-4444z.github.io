@@ -17,6 +17,11 @@ services:
           type: web
           name: core-search-4444z-scramjet
           property: host
+      - key: RAMMERHEAD_HOST
+        fromService:
+          type: web
+          name: core-search-4444z-rammerhead
+          property: host
       - key: DISCORD_WEBHOOK_URL
         sync: false
   - type: web
@@ -32,3 +37,17 @@ services:
         value: 0.0.0.0
       - key: PUBLIC_SITE_ORIGIN
         value: https://four-4444z.github.io
+  - type: web
+    name: core-search-4444z-rammerhead
+    runtime: node
+    plan: free
+    buildCommand: git submodule update --init --recursive && npm --prefix rammerhead install && npm --prefix rammerhead run build
+    startCommand: node rammerhead-start.js
+    healthCheckPath: /needpassword
+    envVars:
+      - key: NODE_VERSION
+        value: 22.20.0
+      - key: HOST
+        value: 0.0.0.0
+      - key: RAMMERHEAD_SERVICE
+        value: "1"

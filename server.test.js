@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const { after, before, test } = require('node:test');
 const {
   createServer,
@@ -56,8 +57,8 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(dashboardHtml, /id="bookmark-list"/);
   assert.match(dashboardHtml, /id="bookmark-add"/);
   assert.match(dashboardHtml, /id="bookmark-form"/);
-  assert.match(dashboardHtml, /runtime-config\.js\?v=20261012-9/);
-  assert.match(dashboardHtml, /script\.js\?v=20261101-1/);
+  assert.match(dashboardHtml, /runtime-config\.js\?v=20261101-2/);
+  assert.match(dashboardHtml, /script\.js\?v=20261101-2/);
   assert.match(dashboardHtml, /style\.css\?v=20261012-9/);
   assert.match(dashboardHtml, /id="search-status"/);
   assert.match(dashboardHtml, /THROUGH SCRAMJET/);
@@ -81,16 +82,18 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   const settingsPage = await (await fetch(`${baseUrl}/settings.html`, { headers })).text();
   assert.match(settingsPage, /id="search-engine"/);
   assert.match(settingsPage, /id="browser-profile"/);
-  assert.match(settingsPage, /script\.js\?v=20261101-1/);
+  assert.match(settingsPage, /script\.js\?v=20261101-2/);
   const suggestionsHtml = await (await fetch(`${baseUrl}/suggestions.html`, { headers })).text();
   assert.match(suggestionsHtml, /class="search-dashboard search-subpage"/);
   assert.match(suggestionsHtml, /id="suggestion-form"/);
-  assert.match(suggestionsHtml, /runtime-config\.js\?v=20261012-9/);
-  assert.match(suggestionsHtml, /script\.js\?v=20261012-9/);
+  assert.match(suggestionsHtml, /runtime-config\.js\?v=20261101-2/);
+  assert.match(suggestionsHtml, /script\.js\?v=20261101-2/);
   assert.match(suggestionsHtml, /suggestions\.js\?v=20261101-3/);
   const runtimeConfig = await (await fetch(`${baseUrl}/runtime-config.js`, { headers })).text();
   assert.match(runtimeConfig, /SYSTEM_CORE_SCRAMJET_URL/);
   assert.match(runtimeConfig, /core-search-4444z-scramjet\.onrender\.com/);
+  assert.match(runtimeConfig, /SYSTEM_CORE_RAMMERHEAD_URL/);
+  assert.match(runtimeConfig, /core-search-4444z-rammerhead\.onrender\.com/);
   const [scramjetRuntime, baremuxRuntime, libcurlRuntime] = await Promise.all([
     fetch(`${baseUrl}/scram/scramjet.all.js`, { headers }),
     fetch(`${baseUrl}/baremux/index.js`, { headers }),
@@ -104,6 +107,11 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(browserScript, /scramjet-embed\.html/);
   assert.match(browserScript, /wispUrl\.href/);
   assert.match(browserScript, /waitForScramjetService/);
+  assert.match(browserScript, /getBrowserProfile\(\) === 'safari'/);
+  assert.match(browserScript, /openWithRammerhead/);
+  assert.match(browserScript, /createRammerheadLaunchUrl/);
+  assert.match(fs.readFileSync('rammerhead-launch.html', 'utf8'), /newsession/);
+  assert.match(fs.readFileSync('rammerhead-start.js', 'utf8'), /core-search-launch/);
   const suggestionScript = await (await fetch(`${baseUrl}/suggestions.js`, { headers })).text();
   assert.match(suggestionScript, /waitForSuggestionsService/);
   assert.match(suggestionScript, /Waking the suggestions service/);
@@ -326,6 +334,8 @@ test('does not expose backend source or Git metadata as static files', async () 
     '/server.js',
     '/server.test.js',
     '/start.js',
+    '/rammerhead-start.js',
+    '/rammerhead-launch.html',
     '/scramjet-server.mjs',
     '/scramjet-embed.html',
     '/scramjet-sw.js',

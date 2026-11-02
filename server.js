@@ -679,6 +679,8 @@ function createServer(authConfig = loadAuthConfig(), options = {}) {
         'server.test.js',
         'start.js',
         'scramjet-server.mjs',
+        'rammerhead-start.js',
+        'rammerhead-launch.html',
         'scramjet-embed.html',
         'scramjet-sw.js'
       ].includes(relativePath.toLowerCase())

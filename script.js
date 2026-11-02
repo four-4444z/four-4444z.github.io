@@ -288,6 +288,25 @@ let scramjetHealthCheck = null;
 let scramjetHealthCheckedAt = 0;
 const systemCoreApiUrl = (window.SYSTEM_CORE_API_URL || '').replace(/\/+$/, '');
 const systemCoreScramjetUrl = window.SYSTEM_CORE_SCRAMJET_URL || '';
+const systemCoreRammerheadUrl = window.SYSTEM_CORE_RAMMERHEAD_URL || '';
+
+function createRammerheadLaunchUrl(destination) {
+  if (!systemCoreRammerheadUrl) {
+    throw new Error('Rammerhead is not configured for this site.');
+  }
+  const launchUrl = new URL('/core-search-launch', systemCoreRammerheadUrl);
+  launchUrl.searchParams.set('url', destination);
+  return launchUrl.href;
+}
+
+function openWithRammerhead(destination) {
+  const openedWindow = window.open('about:blank', '_blank');
+  if (!openedWindow) {
+    throw new Error('Allow pop-ups to open this page in a full browser tab.');
+  }
+  openedWindow.opener = null;
+  openedWindow.location.replace(createRammerheadLaunchUrl(destination));
+}
 
 function createScramjetEmbedUrl(destination) {
   if (!scramjetBaseUrl) throw new Error('The embedded browser service is unavailable.');
@@ -426,8 +445,13 @@ clearBrowserTabsButton?.addEventListener('click', () => {
 
 async function openWithScramjet(query, tab, historyIndex = null) {
   const destination = resolveSearchDestination(query);
-  browserStatus.textContent = 'Connecting to the embedded browser service...';
   try {
+    if (getBrowserProfile() === 'safari') {
+      openWithRammerhead(destination);
+      browserStatus.textContent = `Opened ${destination} in a full-page Rammerhead tab.`;
+      return;
+    }
+    browserStatus.textContent = 'Connecting to the embedded browser service...';
     await scramjetReady;
     if (!scramjetBaseUrl) throw new Error('The embedded browser service is unavailable.');
     browserStatus.textContent = 'Waking the embedded browser service if needed...';
@@ -638,6 +662,15 @@ browserRefreshButton?.addEventListener('click', async () => {
 browserOpenTabButton?.addEventListener('click', async () => {
   const tab = browserTabs.find(({ id }) => id === activeBrowserTabId);
   if (!tab?.url) return;
+  if (getBrowserProfile() === 'safari') {
+    try {
+      openWithRammerhead(tab.url);
+      browserStatus.textContent = `Opened ${tab.url} in a full-page Rammerhead tab.`;
+    } catch (error) {
+      browserStatus.textContent = error.message;
+    }
+    return;
+  }
   const openedWindow = window.open('about:blank', '_blank');
   if (!openedWindow) {
     browserStatus.textContent = 'Allow pop-ups to open this page in a full browser tab.';
@@ -776,14 +809,19 @@ if (searchForm) {
     }
 
     searchButton.disabled = true;
-    searchStatus.textContent = 'Opening the embedded browser...';
+    const usesRammerhead = getBrowserProfile() === 'safari';
+    searchStatus.textContent = usesRammerhead
+      ? 'Opening in a full-page Rammerhead tab...'
+      : 'Opening the embedded browser...';
     const activeTab = browserTabs.find(({ id }) => id === activeBrowserTabId);
     const tab = activeTab && activeTab.historyIndex < 0
       ? activeTab
       : addBrowserTab(new URL(destination).hostname);
     try {
       await openWithScramjet(query, tab);
-      searchStatus.textContent = 'Your site opened in an embedded browser tab.';
+      searchStatus.textContent = usesRammerhead
+        ? 'Your site opened in a full-page Rammerhead tab.'
+        : 'Your site opened in an embedded browser tab.';
       searchButton.disabled = false;
     } catch (error) {
       searchStatus.textContent = error.message;

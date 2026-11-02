@@ -20,12 +20,17 @@ The goal of CORE_SEARCH is to provide a dependable proxy solution with straightf
 ## Deployment
 
 CORE_SEARCH is designed to run directly on Render.
+The Render blueprint deploys separate API, Scramjet, and Rammerhead services.
 
 1. Fork or clone the repository.
 2. Configure the required environment variables.
 3. Connect the repository to Render.
 4. Deploy the service.
 5. Access the generated Render URL.
+
+For local development with Safari support, install Rammerhead's dependencies with
+`npm run setup:rammerhead` before starting CORE_SEARCH. The local Rammerhead
+service runs on port 8082; other browser profiles continue to use Scramjet.
 
 ## Technology Stack
 
