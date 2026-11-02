@@ -3,53 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ABOUT</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
+  <meta name="description" content="Learn about CORE_SEARCH, its browser tools, and how the project handles your settings and traffic.">
+  <title>ABOUT | CORE_SEARCH</title>
+  <link href="style.css" rel="stylesheet" type="text/css">
 </head>
-<body>
-  <div class="scanline"></div>
-  <div class="grid"></div>
-  
+<body class="search-dashboard search-subpage">
+  <canvas id="matrix-canvas"></canvas>
   <nav class="navbar">
-    <div class="nav-logo">>_ SYSTEM_CORE</div>
-    <div class="menu-toggle" id="mobile-menu">
+    <button class="menu-toggle" id="mobile-menu" type="button" aria-label="Toggle navigation" aria-expanded="false">
       <span class="bar"></span>
       <span class="bar"></span>
       <span class="bar"></span>
-    </div>
+    </button>
     <ul class="nav-links">
-      <li><a href="main.html">DASHBOARD</a></li>
+      <li><a href="main.html">SEARCH</a></li>
       <li><a href="settings.html">SETTINGS</a></li>
-      <li><a href="apply.html">APPLY</a></li>
-      <li><a href="about.html" class="active">ABOUT</a></li>
       <li><a href="suggestions.html">SUGGEST</a></li>
+      <li><a href="about.html" class="active" aria-current="page">ABOUT</a></li>
     </ul>
   </nav>
-  
-  <div class="main-content">
-    <h1>DEVELOPER ARCHIVES</h1>
-    <div class="logs-container" style="max-width: 800px; margin: 2rem auto; text-align: left;">
-      <div style="border: 1px solid #00ff00; padding: 1.5rem; background: rgba(0, 255, 0, 0.05); margin-bottom: 2rem;">
-        <h2 style="color: #00ff00; margin-bottom: 1rem;">[ PROJECT LEAD ]</h2>
-        <p>IDENTIFIER: four-4444z</p>
-        <p>ROLE: SYSTEM ARCHITECT</p>
-        <p>STATUS: ACTIVE</p>
-        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">Specializing in core infrastructure and security-focused interface design. The original creator of SYSTEM_CORE.</p>
-      </div>
-      
-      <div style="border: 1px solid #00ff00; padding: 1.5rem; background: rgba(0, 255, 0, 0.05);">
-        <h2 style="color: #00ff00; margin-bottom: 1rem;">[ CORE TEAM ]</h2>
-        <p>IDENTIFIER: ChristianVasq10</p>
-        <p>ROLE: INTERFACE DEVELOPER</p>
-        <p>STATUS: ONLINE</p>
-        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">Responsible for responsive design, browser interfaces, and integrating external services.</p>
-      </div>
-    </div>
-  </div>
-  <footer class="site-update-note page-update-note">
-    <span>LAST UPDATED: <time datetime="2026-10-12">OCTOBER 12, 2026</time></span>
-  </footer>
 
-  <script src="script.js"></script>
+  <main class="settings-page about-page">
+    <a class="settings-back" href="main.html">&larr; BACK TO SEARCH</a>
+    <section class="settings-panel about-panel" aria-labelledby="about-title">
+      <p class="search-kicker"><span class="online-indicator"></span> PROJECT INFORMATION</p>
+      <h1 id="about-title">ABOUT CORE_SEARCH</h1>
+      <p class="settings-description">CORE_SEARCH is a browser-based search dashboard that brings web search, bookmarks, browser preferences, and optional web access tools together in one place. The project is actively developing, so some sites or features may not work consistently.</p>
+
+      <section class="about-section" aria-labelledby="tools-title">
+        <h2 id="tools-title">TOOLS</h2>
+        <p>Choose DuckDuckGo, Google, or Bing for searches. Use the built-in address bar and tabs to open websites through the available proxy service.</p>
+        <p>The browser profile in Settings selects the connection flow: Safari opens a full-page Rammerhead tab; other profiles use the embedded Scramjet browser.</p>
+      </section>
+
+      <section class="about-section" aria-labelledby="privacy-title">
+        <h2 id="privacy-title">PRIVACY &amp; LIMITATIONS</h2>
+        <p>Your theme, browser profile, search preference, and bookmarks are stored in this browser. Searches go to the search engine you select. When you use a proxy, your request passes through that proxy service before reaching the destination website.</p>
+        <p>CORE_SEARCH does not promise anonymity or compatibility with every site. Avoid entering passwords, payment information, or other sensitive data into proxied pages.</p>
+      </section>
+
+      <section class="about-section" aria-labelledby="what-we-provide-title">
+        <h2 id="what-we-provide-title">WHAT WE PROVIDE</h2>
+        <p>Our goal is to ensure you can use the Internet the way you want to, safely and securely. We try our best to provide a seamless and secure browsing experience through our tools and services. CORE_SEARCH is designed to be ad-free. We don't allow such interruptions on our websites, ever. CORE_SEARCH is a free service, and it's going to stay that way.</p>
+        <p>We try our best to block malware from ever appearing in our embedded browsers. If you encounter any malware, PLEASE fot God's sake, LET US KNOW! We want to protect you as best as we can.</p>
+      </section>
+
+      <section class="about-section" aria-labelledby="feedback-title">
+        <h2 id="feedback-title">FEEDBACK</h2>
+        <p>Have an idea or found a problem? Send a note through the <a href="suggestions.html">suggestions page</a>.</p>
+      </section>
+    </section>
+    <footer class="site-update-note">
+      <span>CORE_SEARCH <span class="footer-separator">/</span> ABOUT</span>
+    </footer>
+  </main>
+
+  <script src="script.js?v=20261101-3"></script>
 </body>
 </html>

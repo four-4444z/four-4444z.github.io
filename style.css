@@ -1220,6 +1220,36 @@ button:hover {
   line-height: 1.6;
 }
 
+.about-panel {
+  width: min(760px, 100%);
+}
+
+.about-section {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--theme-soft-border);
+  color: var(--theme-secondary-text);
+  font-family: Arial, sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.about-section h2 {
+  margin: 0 0 0.65rem;
+  color: var(--theme-accent);
+  font-family: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.13em;
+}
+
+.about-section p {
+  margin: 0.65rem 0 0;
+}
+
+.about-section a {
+  color: var(--theme-accent);
+}
+
 .settings-label {
   display: block;
   margin: 2rem 0 0.65rem;

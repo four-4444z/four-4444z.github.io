@@ -75,6 +75,7 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(dashboardHtml, /id="dashboard-browser-address-form"/);
   assert.match(dashboardHtml, /LAST UPDATED:/);
   assert.match(dashboardHtml, /suggestions\.html/);
+  assert.match(dashboardHtml, /href="about\.html">ABOUT/);
   const dashboardNav = dashboardHtml.match(/<nav\b[\s\S]*?<\/nav>/)[0];
   assert.doesNotMatch(dashboardHtml, /href="browser\.html"/);
   assert.doesNotMatch(dashboardNav, /id="mobile-menu"/);
@@ -82,10 +83,12 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   const settingsPage = await (await fetch(`${baseUrl}/settings.html`, { headers })).text();
   assert.match(settingsPage, /id="search-engine"/);
   assert.match(settingsPage, /id="browser-profile"/);
+  assert.match(settingsPage, /href="about\.html">ABOUT/);
   assert.match(settingsPage, /script\.js\?v=20261101-3/);
   const suggestionsHtml = await (await fetch(`${baseUrl}/suggestions.html`, { headers })).text();
   assert.match(suggestionsHtml, /class="search-dashboard search-subpage"/);
   assert.match(suggestionsHtml, /id="suggestion-form"/);
+  assert.match(suggestionsHtml, /href="about\.html">ABOUT/);
   assert.match(suggestionsHtml, /runtime-config\.js\?v=20261101-2/);
   assert.match(suggestionsHtml, /script\.js\?v=20261101-3/);
   assert.match(suggestionsHtml, /suggestions\.js\?v=20261101-3/);
@@ -134,6 +137,14 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(settingsHtml, /#64a8ff/);
   assert.match(settingsHtml, /#b18cff/);
   assert.match(settingsHtml, /#ff75be/);
+  const aboutResponse = await fetch(`${baseUrl}/about.html`, { headers });
+  const aboutHtml = await aboutResponse.text();
+  assert.equal(aboutResponse.status, 200);
+  assert.match(aboutHtml, /class="search-dashboard search-subpage"/);
+  assert.match(aboutHtml, /ABOUT CORE_SEARCH/);
+  assert.match(aboutHtml, /full-page Rammerhead tab/);
+  assert.match(aboutHtml, /embedded Scramjet browser/);
+  assert.match(aboutHtml, /suggestions\.html/);
   for (const page of ['/browser.html', '/browser.js', '/youtube.html', '/chat.html', '/strongdog.html', '/games.html', '/entertainment.html']) {
     assert.equal((await fetch(`${baseUrl}${page}`)).status, 404, `${page} should be removed`);
   }
