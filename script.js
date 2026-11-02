@@ -72,6 +72,10 @@ if (searchSettingsForm) {
   const savedColor = getSavedThemeColor();
   engineSelect.value = getSearchEngine();
   browserProfileSelect.value = getBrowserProfile();
+  browserProfileSelect.addEventListener('change', () => {
+    localStorage.setItem(BROWSER_PROFILE_STORAGE_KEY, browserProfileSelect.value);
+    settingsFeedback.textContent = 'Browser preference saved.';
+  });
   hexInput.value = savedColor;
   colorPicker.value = savedColor;
   panicUrlInput.value = localStorage.getItem(PANIC_URL_STORAGE_KEY) || '';

@@ -58,7 +58,7 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(dashboardHtml, /id="bookmark-add"/);
   assert.match(dashboardHtml, /id="bookmark-form"/);
   assert.match(dashboardHtml, /runtime-config\.js\?v=20261101-2/);
-  assert.match(dashboardHtml, /script\.js\?v=20261101-2/);
+  assert.match(dashboardHtml, /script\.js\?v=20261101-3/);
   assert.match(dashboardHtml, /style\.css\?v=20261012-9/);
   assert.match(dashboardHtml, /id="search-status"/);
   assert.match(dashboardHtml, /THROUGH SCRAMJET/);
@@ -82,12 +82,12 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   const settingsPage = await (await fetch(`${baseUrl}/settings.html`, { headers })).text();
   assert.match(settingsPage, /id="search-engine"/);
   assert.match(settingsPage, /id="browser-profile"/);
-  assert.match(settingsPage, /script\.js\?v=20261101-2/);
+  assert.match(settingsPage, /script\.js\?v=20261101-3/);
   const suggestionsHtml = await (await fetch(`${baseUrl}/suggestions.html`, { headers })).text();
   assert.match(suggestionsHtml, /class="search-dashboard search-subpage"/);
   assert.match(suggestionsHtml, /id="suggestion-form"/);
   assert.match(suggestionsHtml, /runtime-config\.js\?v=20261101-2/);
-  assert.match(suggestionsHtml, /script\.js\?v=20261101-2/);
+  assert.match(suggestionsHtml, /script\.js\?v=20261101-3/);
   assert.match(suggestionsHtml, /suggestions\.js\?v=20261101-3/);
   const runtimeConfig = await (await fetch(`${baseUrl}/runtime-config.js`, { headers })).text();
   assert.match(runtimeConfig, /SYSTEM_CORE_SCRAMJET_URL/);
@@ -110,6 +110,8 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(browserScript, /getBrowserProfile\(\) === 'safari'/);
   assert.match(browserScript, /openWithRammerhead/);
   assert.match(browserScript, /createRammerheadLaunchUrl/);
+  assert.match(browserScript, /browserProfileSelect\.addEventListener\('change'/);
+  assert.match(browserScript, /localStorage\.setItem\(BROWSER_PROFILE_STORAGE_KEY, browserProfileSelect\.value\)/);
   assert.match(fs.readFileSync('rammerhead-launch.html', 'utf8'), /newsession/);
   assert.match(fs.readFileSync('rammerhead-start.js', 'utf8'), /core-search-launch/);
   const suggestionScript = await (await fetch(`${baseUrl}/suggestions.js`, { headers })).text();
