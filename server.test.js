@@ -113,10 +113,19 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(browserScript, /wispUrl\.href/);
   assert.match(browserScript, /waitForScramjetService/);
   assert.match(browserScript, /getBrowserProfile\(\) === 'safari'/);
-  assert.match(browserScript, /openWithRammerhead/);
-  assert.match(browserScript, /createRammerheadLaunchUrl/);
+  assert.match(browserScript, /openSafariPhotoPage/);
+  assert.match(browserScript, /safari-photo\.html/);
   assert.match(browserScript, /browserProfileSelect\.addEventListener\('change'/);
   assert.match(browserScript, /localStorage\.setItem\(BROWSER_PROFILE_STORAGE_KEY, browserProfileSelect\.value\)/);
+  const safariPhotoPage = await (await fetch(`${baseUrl}/safari-photo.html`, { headers })).text();
+  assert.match(safariPhotoPage, /<img src="safari-photo\.png" alt="Screenshot of the Rammerhead browser page">/);
+  const safariPhoto = await fetch(`${baseUrl}/safari-photo.png`, { headers });
+  assert.equal(safariPhoto.status, 200);
+  assert.match(safariPhoto.headers.get('content-type'), /image\/png/);
+  assert.deepEqual(
+    [...new Uint8Array(await safariPhoto.arrayBuffer()).slice(0, 8)],
+    [137, 80, 78, 71, 13, 10, 26, 10]
+  );
   assert.match(fs.readFileSync('rammerhead-launch.html', 'utf8'), /newsession/);
   assert.match(fs.readFileSync('rammerhead-start.js', 'utf8'), /core-search-launch/);
   const suggestionScript = await (await fetch(`${baseUrl}/suggestions.js`, { headers })).text();
@@ -144,11 +153,16 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.equal(aboutResponse.status, 200);
   assert.match(aboutHtml, /class="search-dashboard search-subpage has-global-footer"/);
   assert.match(aboutHtml, /ABOUT CORE_SEARCH/);
-  assert.match(aboutHtml, /full-page Rammerhead tab/);
+  assert.match(aboutHtml, /full-page photo page/);
   assert.match(aboutHtml, /embedded Scramjet browser/);
   assert.match(aboutHtml, /suggestions\.html/);
+  const notFoundHtml = await (await fetch(`${baseUrl}/404.html`, { headers })).text();
+  assert.match(notFoundHtml, /id="matrix-canvas"/);
+  assert.match(notFoundHtml, /id="mobile-menu"/);
+  assert.match(notFoundHtml, /You've reached the void\. To escape, try going back <a href="main\.html">home<\/a>\./);
+  assert.match(notFoundHtml, /script\.js\?v=20261101-3/);
   for (const page of [
-    '/index.html', '/apply.html', '/main.html', '/about.html', '/settings.html',
+    '/index.html', '/apply.html', '/main.html', '/about.html', '/settings.html', '/404.html',
     '/suggestions.html', '/shadow-core.html', '/shadow-login.html',
     '/terminal.html', '/vault.html', '/vault-login.html',
     '/rammerhead-launch.html', '/scramjet-embed.html'

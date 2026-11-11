@@ -1223,6 +1223,44 @@ button:hover {
   padding: 2rem 0 3rem;
 }
 
+.void-page {
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.void-panel {
+  width: min(620px, 100%);
+  text-align: center;
+}
+
+.void-panel .search-kicker {
+  justify-content: center;
+}
+
+.void-panel .void-face {
+  margin: 1.5rem 0 0;
+  color: var(--theme-accent, #61f99b);
+  font-size: clamp(5rem, 18vw, 9rem);
+  letter-spacing: -0.12em;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 0 36px color-mix(in srgb, var(--theme-accent, #61f99b) 35%, transparent);
+}
+
+.void-panel .settings-description {
+  font-size: clamp(1rem, 3vw, 1.15rem);
+}
+
+.void-panel .settings-description a {
+  color: var(--theme-accent, #61f99b);
+  font-weight: 700;
+  text-underline-offset: 0.2em;
+}
+
+.void-panel .settings-description a:hover {
+  color: #effff4;
+}
+
 .settings-back {
   color: #9cb6a7;
   font-size: 0.7rem;

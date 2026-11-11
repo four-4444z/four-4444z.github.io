@@ -292,24 +292,14 @@ let scramjetHealthCheck = null;
 let scramjetHealthCheckedAt = 0;
 const systemCoreApiUrl = (window.SYSTEM_CORE_API_URL || '').replace(/\/+$/, '');
 const systemCoreScramjetUrl = window.SYSTEM_CORE_SCRAMJET_URL || '';
-const systemCoreRammerheadUrl = window.SYSTEM_CORE_RAMMERHEAD_URL || '';
 
-function createRammerheadLaunchUrl(destination) {
-  if (!systemCoreRammerheadUrl) {
-    throw new Error('Rammerhead is not configured for this site.');
-  }
-  const launchUrl = new URL('/core-search-launch', systemCoreRammerheadUrl);
-  launchUrl.searchParams.set('url', destination);
-  return launchUrl.href;
-}
-
-function openWithRammerhead(destination) {
-  const openedWindow = window.open('about:blank', '_blank');
+function openSafariPhotoPage() {
+  const photoPageUrl = new URL('safari-photo.html', window.location.href);
+  const openedWindow = window.open(photoPageUrl.href, '_blank');
   if (!openedWindow) {
-    throw new Error('Allow pop-ups to open this page in a full browser tab.');
+    throw new Error('Allow pop-ups to open the Safari page in a full browser tab.');
   }
   openedWindow.opener = null;
-  openedWindow.location.replace(createRammerheadLaunchUrl(destination));
 }
 
 function createScramjetEmbedUrl(destination) {
@@ -451,8 +441,8 @@ async function openWithScramjet(query, tab, historyIndex = null) {
   const destination = resolveSearchDestination(query);
   try {
     if (getBrowserProfile() === 'safari') {
-      openWithRammerhead(destination);
-      browserStatus.textContent = `Opened ${destination} in a full-page Rammerhead tab.`;
+      openSafariPhotoPage();
+      browserStatus.textContent = 'Opened the Safari photo page in a full-page tab.';
       return;
     }
     browserStatus.textContent = 'Connecting to the embedded browser service...';
@@ -668,8 +658,8 @@ browserOpenTabButton?.addEventListener('click', async () => {
   if (!tab?.url) return;
   if (getBrowserProfile() === 'safari') {
     try {
-      openWithRammerhead(tab.url);
-      browserStatus.textContent = `Opened ${tab.url} in a full-page Rammerhead tab.`;
+      openSafariPhotoPage();
+      browserStatus.textContent = 'Opened the Safari photo page in a full-page tab.';
     } catch (error) {
       browserStatus.textContent = error.message;
     }
@@ -813,9 +803,9 @@ if (searchForm) {
     }
 
     searchButton.disabled = true;
-    const usesRammerhead = getBrowserProfile() === 'safari';
-    searchStatus.textContent = usesRammerhead
-      ? 'Opening in a full-page Rammerhead tab...'
+    const usesSafariPhotoPage = getBrowserProfile() === 'safari';
+    searchStatus.textContent = usesSafariPhotoPage
+      ? 'Opening the Safari photo page...'
       : 'Opening the embedded browser...';
     const activeTab = browserTabs.find(({ id }) => id === activeBrowserTabId);
     const tab = activeTab && activeTab.historyIndex < 0
@@ -823,8 +813,8 @@ if (searchForm) {
       : addBrowserTab(new URL(destination).hostname);
     try {
       await openWithScramjet(query, tab);
-      searchStatus.textContent = usesRammerhead
-        ? 'Your site opened in a full-page Rammerhead tab.'
+      searchStatus.textContent = usesSafariPhotoPage
+        ? 'The Safari photo page opened in a full-page tab.'
         : 'Your site opened in an embedded browser tab.';
       searchButton.disabled = false;
     } catch (error) {
