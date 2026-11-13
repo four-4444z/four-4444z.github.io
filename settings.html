@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Customize search, colors, appearance, and panic shortcut settings for CORE_SEARCH.">
+  <meta name="description" content="Customize search, colors, appearance, favicon, and panic shortcut settings for CORE_SEARCH.">
   <title>SETTINGS | CORE_SEARCH</title>
   <link href="style.css" rel="stylesheet" type="text/css">
 </head>
@@ -28,7 +28,7 @@
     <section class="settings-panel">
       <p class="search-kicker"><span class="online-indicator"></span> PERSONALIZE YOUR EXPERIENCE</p>
       <h1>SETTINGS</h1>
-      <p class="settings-description">Customize search, browser performance, theme, appearance, and your quick-exit shortcut.</p>
+      <p class="settings-description">Customize search, browser performance, theme, appearance, title, favicon, and your quick-exit shortcut. Settings automatically save and are applied across the site.</p>
       <form id="search-settings-form">
         <label class="settings-label" for="search-engine">DEFAULT SEARCH ENGINE</label>
         <select id="search-engine" name="search-engine">
@@ -84,6 +84,34 @@
           </div>
         </fieldset>
 
+        <fieldset class="theme-fieldset favicon-fieldset">
+          <legend class="settings-label">FAVICON</legend>
+          <label class="settings-label custom-color-label" for="custom-page-title">CUSTOM TAB TITLE</label>
+          <input class="settings-text-input" id="custom-page-title" name="custom-page-title" type="text" maxlength="80" placeholder="CORE_SEARCH">
+          <label class="settings-label custom-color-label" for="favicon-choice">CHOOSE A FAVICON</label>
+          <div class="favicon-choice-row">
+            <select id="favicon-choice" name="favicon-choice">
+              <option value="default">Default</option>
+              <option value="canvas">Canvas</option>
+              <option value="google">Google</option>
+              <option value="custom">Custom</option>
+            </select>
+            <button class="favicon-add-toggle" id="favicon-add-toggle" type="button" aria-label="Add a favicon preset" aria-expanded="false" aria-controls="favicon-add-form" title="Add a favicon preset">+</button>
+          </div>
+          <div class="favicon-add-form" id="favicon-add-form" hidden>
+            <label class="settings-label custom-color-label" for="favicon-preset-name">PRESET NAME</label>
+            <input class="settings-text-input" id="favicon-preset-name" type="text" maxlength="40" placeholder="My favicon" autocomplete="off">
+            <label class="settings-label custom-color-label" for="favicon-preset-url">PRESET FAVICON URL</label>
+            <input class="settings-text-input" id="favicon-preset-url" type="text" inputmode="url" maxlength="2048" placeholder="https://example.com/favicon.ico" autocomplete="url">
+            <button class="favicon-preset-save" id="favicon-preset-save" type="button">ADD PRESET</button>
+          </div>
+          <div id="custom-favicon-field" hidden>
+            <label class="settings-label custom-color-label" for="custom-favicon-url">CUSTOM FAVICON URL</label>
+            <input class="settings-text-input" id="custom-favicon-url" name="custom-favicon-url" type="text" inputmode="url" maxlength="2048" placeholder="https://example.com/favicon.ico" autocomplete="url">
+          </div>
+          <p class="theme-help">Find favicons <a class="theme-evident" href="https://favicon.run/" target="_blank" rel="noopener noreferrer">here</a>.</p>
+        </fieldset>
+
         <fieldset class="theme-fieldset panic-fieldset">
           <legend class="settings-label">PANIC KEY</legend>
           <p class="theme-help panic-description">Press your shortcut to open your chosen destination in a new tab. It stays inactive while you type in a field.</p>
@@ -98,8 +126,7 @@
           <p class="theme-help" id="panic-capture-status" role="status" aria-live="polite"></p>
         </fieldset>
 
-        <button class="settings-save" type="submit">SAVE SETTINGS</button>
-        <p class="settings-feedback" id="settings-feedback" role="status" aria-live="polite"></p>
+        <p class="settings-feedback" id="settings-feedback" role="status" aria-live="polite">Changes save automatically.</p>
       </form>
     </section>
     <footer class="site-update-note site-global-footer">
@@ -110,6 +137,6 @@
     </footer>
   </main>
 
-  <script src="script.js?v=20261112-2"></script>
+  <script src="script.js?v=20261112-5"></script>
 </body>
 </html>

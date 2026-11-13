@@ -10,7 +10,16 @@ const THEME_COLOR_STORAGE_KEY = 'coreSearchThemeColor';
 const APPEARANCE_STORAGE_KEY = 'coreSearchAppearance';
 const PANIC_KEY_STORAGE_KEY = 'coreSearchPanicKey';
 const PANIC_URL_STORAGE_KEY = 'coreSearchPanicUrl';
+const FAVICON_STORAGE_KEY = 'coreSearchFavicon';
+const CUSTOM_FAVICON_URL_STORAGE_KEY = 'coreSearchCustomFaviconUrl';
+const FAVICON_PRESETS_STORAGE_KEY = 'coreSearchFaviconPresets';
+const PAGE_TITLE_STORAGE_KEY = 'coreSearchPageTitle';
 const DEFAULT_THEME_COLOR = '#61f99b';
+const DEFAULT_PAGE_TITLE = document.title;
+const FAVICON_PRESETS = {
+  canvas: 'https://favicon.run/favicon?domain=canvas.instructure.com&sz=64',
+  google: 'https://favicon.run/favicon?domain=google.com&sz=48'
+};
 const BROWSER_PROFILES = {
   chrome: { requestTimeout: 8000, retryInterval: 2000, startupTimeout: 90000 },
   safari: { requestTimeout: 15000, retryInterval: 4000, startupTimeout: 90000 },
@@ -44,6 +53,65 @@ function getSavedThemeColor() {
 function getSavedAppearance() {
   const appearance = localStorage.getItem(APPEARANCE_STORAGE_KEY);
   return ['dark', 'light', 'system'].includes(appearance) ? appearance : 'dark';
+}
+
+function normalizeFaviconUrl(value) {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function getSavedFaviconPresets() {
+  try {
+    const presets = JSON.parse(localStorage.getItem(FAVICON_PRESETS_STORAGE_KEY) || '[]');
+    if (!Array.isArray(presets)) return [];
+    return presets.filter((preset) =>
+      preset &&
+      typeof preset.id === 'string' &&
+      typeof preset.name === 'string' &&
+      preset.name.trim() &&
+      typeof preset.url === 'string' &&
+      normalizeFaviconUrl(preset.url)
+    );
+  } catch (error) {
+    console.error('Saved favicon presets could not be read.', error);
+    return [];
+  }
+}
+
+function getSavedFavicon() {
+  const mode = localStorage.getItem(FAVICON_STORAGE_KEY) || 'default';
+  if (Object.hasOwn(FAVICON_PRESETS, mode)) return { mode, url: FAVICON_PRESETS[mode] };
+  if (mode.startsWith('saved:')) {
+    const preset = getSavedFaviconPresets().find((item) => item.id === mode.slice(6));
+    if (preset) return { mode, url: normalizeFaviconUrl(preset.url) };
+  }
+  if (mode === 'custom') {
+    return { mode, url: normalizeFaviconUrl(localStorage.getItem(CUSTOM_FAVICON_URL_STORAGE_KEY) || '') };
+  }
+  return { mode: 'default', url: '' };
+}
+
+function applyFavicon(url) {
+  let link = document.querySelector('[data-user-favicon]');
+  if (!url) {
+    link?.remove();
+    return;
+  }
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    link.dataset.userFavicon = '';
+    document.head.append(link);
+  }
+  link.href = url;
+}
+
+function applyPageTitle() {
+  document.title = localStorage.getItem(PAGE_TITLE_STORAGE_KEY) || DEFAULT_PAGE_TITLE;
 }
 
 function updateThemeSwatches(color) {
@@ -98,6 +166,8 @@ async function updateRepositoryFooter() {
 void updateRepositoryFooter();
 
 applyTheme(getSavedThemeColor(), getSavedAppearance());
+applyFavicon(getSavedFavicon().url);
+applyPageTitle();
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (getSavedAppearance() === 'system') applyTheme(getSavedThemeColor(), 'system');
 });
@@ -109,6 +179,15 @@ if (searchSettingsForm) {
   const hexInput = document.getElementById('theme-hex');
   const colorPicker = document.getElementById('theme-color-picker');
   const panicUrlInput = document.getElementById('panic-url');
+  const faviconChoice = document.getElementById('favicon-choice');
+  const customFaviconField = document.getElementById('custom-favicon-field');
+  const customFaviconUrlInput = document.getElementById('custom-favicon-url');
+  const faviconAddToggle = document.getElementById('favicon-add-toggle');
+  const faviconAddForm = document.getElementById('favicon-add-form');
+  const faviconPresetNameInput = document.getElementById('favicon-preset-name');
+  const faviconPresetUrlInput = document.getElementById('favicon-preset-url');
+  const faviconPresetSaveButton = document.getElementById('favicon-preset-save');
+  const pageTitleInput = document.getElementById('custom-page-title');
   const panicKeyInput = document.getElementById('panic-key');
   const panicCaptureButton = document.getElementById('panic-capture');
   const panicClearButton = document.getElementById('panic-clear');
@@ -117,16 +196,108 @@ if (searchSettingsForm) {
   const savedColor = getSavedThemeColor();
   engineSelect.value = getSearchEngine();
   browserProfileSelect.value = getBrowserProfile();
-  browserProfileSelect.addEventListener('change', () => {
-    localStorage.setItem(BROWSER_PROFILE_STORAGE_KEY, browserProfileSelect.value);
-    settingsFeedback.textContent = 'Browser preference saved.';
-  });
   hexInput.value = savedColor;
   colorPicker.value = savedColor;
   panicUrlInput.value = localStorage.getItem(PANIC_URL_STORAGE_KEY) || '';
+  pageTitleInput.value = localStorage.getItem(PAGE_TITLE_STORAGE_KEY) || '';
+  const savedFavicon = getSavedFavicon();
+  faviconChoice.value = savedFavicon.mode;
+  customFaviconUrlInput.value = savedFavicon.mode === 'custom'
+    ? localStorage.getItem(CUSTOM_FAVICON_URL_STORAGE_KEY) || ''
+    : '';
+  customFaviconField.hidden = faviconChoice.value !== 'custom';
+  customFaviconUrlInput.required = faviconChoice.value === 'custom';
+  const renderSavedFaviconPresets = () => {
+    document.querySelectorAll('#favicon-choice option[data-saved-preset]').forEach((option) => option.remove());
+    getSavedFaviconPresets().forEach((preset) => {
+      const option = document.createElement('option');
+      option.value = `saved:${preset.id}`;
+      option.textContent = preset.name;
+      option.dataset.savedPreset = '';
+      faviconChoice.append(option);
+    });
+  };
+  renderSavedFaviconPresets();
+  faviconChoice.value = savedFavicon.mode;
+  customFaviconField.hidden = faviconChoice.value !== 'custom';
+  customFaviconUrlInput.required = faviconChoice.value === 'custom';
   panicKeyInput.value = localStorage.getItem(PANIC_KEY_STORAGE_KEY) || '';
   document.querySelector(`input[name="appearance"][value="${getSavedAppearance()}"]`).checked = true;
   updateThemeSwatches(savedColor);
+
+  const saveSettings = (event) => {
+    event?.preventDefault();
+    const issues = [];
+    const color = hexInput.value.trim().toLowerCase();
+    if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+      localStorage.setItem(THEME_COLOR_STORAGE_KEY, color);
+      applyTheme(color, searchSettingsForm.elements.appearance.value);
+      updateThemeSwatches(color);
+    } else {
+      issues.push('Enter a valid #RRGGBB accent color.');
+    }
+
+    if (Object.hasOwn(SEARCH_ENGINES, engineSelect.value)) {
+      localStorage.setItem(SEARCH_ENGINE_STORAGE_KEY, engineSelect.value);
+    }
+    if (Object.hasOwn(BROWSER_PROFILES, browserProfileSelect.value)) {
+      localStorage.setItem(BROWSER_PROFILE_STORAGE_KEY, browserProfileSelect.value);
+    }
+
+    const appearance = searchSettingsForm.elements.appearance.value;
+    if (['dark', 'light', 'system'].includes(appearance)) {
+      localStorage.setItem(APPEARANCE_STORAGE_KEY, appearance);
+      applyTheme(/^#[0-9a-fA-F]{6}$/.test(color) ? color : getSavedThemeColor(), appearance);
+    }
+
+    const pageTitle = pageTitleInput.value.trim();
+    if (pageTitle) localStorage.setItem(PAGE_TITLE_STORAGE_KEY, pageTitle);
+    else localStorage.removeItem(PAGE_TITLE_STORAGE_KEY);
+    applyPageTitle();
+
+    const savedPreset = faviconChoice.value.startsWith('saved:')
+      ? getSavedFaviconPresets().find((preset) => `saved:${preset.id}` === faviconChoice.value)
+      : null;
+    if (['default', ...Object.keys(FAVICON_PRESETS)].includes(faviconChoice.value) || savedPreset) {
+      const faviconUrl = savedPreset
+        ? normalizeFaviconUrl(savedPreset.url)
+        : FAVICON_PRESETS[faviconChoice.value] || '';
+      localStorage.setItem(FAVICON_STORAGE_KEY, faviconChoice.value);
+      localStorage.removeItem(CUSTOM_FAVICON_URL_STORAGE_KEY);
+      applyFavicon(faviconUrl);
+    } else if (faviconChoice.value === 'custom') {
+      const faviconUrl = normalizeFaviconUrl(customFaviconUrlInput.value.trim());
+      if (faviconUrl) {
+        localStorage.setItem(FAVICON_STORAGE_KEY, 'custom');
+        localStorage.setItem(CUSTOM_FAVICON_URL_STORAGE_KEY, faviconUrl);
+        applyFavicon(faviconUrl);
+      } else {
+        issues.push('Enter a valid HTTP or HTTPS favicon URL.');
+      }
+    }
+
+    let panicUrl = panicUrlInput.value.trim();
+    if (panicUrl) {
+      try {
+        const parsedUrl = new URL(panicUrl.includes('://') ? panicUrl : `https://${panicUrl}`);
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error();
+        panicUrl = parsedUrl.href;
+      } catch {
+        issues.push('Enter a valid HTTP or HTTPS panic destination.');
+        panicUrl = null;
+      }
+    }
+    if (panicUrl !== null) localStorage.setItem(PANIC_URL_STORAGE_KEY, panicUrl);
+
+    const panicKey = panicKeyInput.value;
+    if (!panicKey || panicKey.length === 1 || /^F(?:[1-9]|1[0-2])$/.test(panicKey)) {
+      localStorage.setItem(PANIC_KEY_STORAGE_KEY, panicKey);
+    } else {
+      issues.push('Choose a printable key or function key F1–F12.');
+    }
+
+    settingsFeedback.textContent = issues.length ? issues.join(' ') : 'Changes saved automatically.';
+  };
 
   document.querySelectorAll('.theme-swatch').forEach((swatch) => {
     swatch.addEventListener('click', () => {
@@ -134,6 +305,7 @@ if (searchSettingsForm) {
       colorPicker.value = swatch.dataset.color;
       updateThemeSwatches(swatch.dataset.color);
       hexInput.setCustomValidity('');
+      saveSettings();
     });
   });
 
@@ -153,6 +325,10 @@ if (searchSettingsForm) {
       updateThemeSwatches('');
     }
   });
+  searchSettingsForm.addEventListener('input', (event) => {
+    if (!['favicon-preset-name', 'favicon-preset-url'].includes(event.target.id)) saveSettings();
+  });
+  searchSettingsForm.addEventListener('change', saveSettings);
 
   panicCaptureButton.addEventListener('click', () => {
     isCapturingPanicKey = !isCapturingPanicKey;
@@ -166,64 +342,54 @@ if (searchSettingsForm) {
     panicKeyInput.value = '';
     isCapturingPanicKey = false;
     panicCaptureButton.textContent = 'SET KEY';
-    panicCaptureStatus.textContent = 'Panic key cleared. Save settings to confirm.';
+    panicCaptureStatus.textContent = 'Panic key cleared.';
+    saveSettings();
   });
 
   panicUrlInput.addEventListener('input', () => panicUrlInput.setCustomValidity(''));
-
-  searchSettingsForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const color = hexInput.value.trim().toLowerCase();
-    if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
-      hexInput.setCustomValidity('Enter a hex color like #61f99b.');
-      hexInput.reportValidity();
-      return;
-    }
-
-    if (!Object.hasOwn(SEARCH_ENGINES, engineSelect.value)) {
-      settingsFeedback.textContent = 'Choose a valid search engine.';
-      return;
-    }
-    if (!Object.hasOwn(BROWSER_PROFILES, browserProfileSelect.value)) {
-      settingsFeedback.textContent = 'Choose a valid browser profile.';
-      return;
-    }
-    const appearance = searchSettingsForm.elements.appearance.value;
-    if (!['dark', 'light', 'system'].includes(appearance)) {
-      settingsFeedback.textContent = 'Choose a valid appearance.';
-      return;
-    }
-
-    let panicUrl = panicUrlInput.value.trim();
-    if (panicUrl) {
-      try {
-        const parsedUrl = new URL(panicUrl.includes('://') ? panicUrl : `https://${panicUrl}`);
-        if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error();
-        panicUrl = parsedUrl.href;
-      } catch {
-        panicUrlInput.setCustomValidity('Enter a valid HTTP or HTTPS destination.');
-        panicUrlInput.reportValidity();
-        return;
-      }
-    }
-
-    const panicKey = panicKeyInput.value;
-    if (panicKey && panicKey.length !== 1 && !/^F(?:[1-9]|1[0-2])$/.test(panicKey)) {
-      panicCaptureStatus.textContent = 'Choose a printable key or function key F1–F12.';
-      return;
-    }
-
-    localStorage.setItem(SEARCH_ENGINE_STORAGE_KEY, engineSelect.value);
-    localStorage.setItem(BROWSER_PROFILE_STORAGE_KEY, browserProfileSelect.value);
-    localStorage.setItem(THEME_COLOR_STORAGE_KEY, color);
-    localStorage.setItem(APPEARANCE_STORAGE_KEY, appearance);
-    localStorage.setItem(PANIC_KEY_STORAGE_KEY, panicKey);
-    localStorage.setItem(PANIC_URL_STORAGE_KEY, panicUrl);
-    applyTheme(color, appearance);
-    updateThemeSwatches(color);
-    panicUrlInput.value = panicUrl;
-    settingsFeedback.textContent = 'SETTINGS SAVED.';
+  faviconChoice.addEventListener('change', () => {
+    customFaviconField.hidden = faviconChoice.value !== 'custom';
+    customFaviconUrlInput.required = faviconChoice.value === 'custom';
+    customFaviconUrlInput.setCustomValidity('');
+    saveSettings();
   });
+  customFaviconUrlInput.addEventListener('input', () => customFaviconUrlInput.setCustomValidity(''));
+  faviconAddToggle.addEventListener('click', () => {
+    faviconAddForm.hidden = !faviconAddForm.hidden;
+    faviconAddToggle.setAttribute('aria-expanded', String(!faviconAddForm.hidden));
+    if (!faviconAddForm.hidden) faviconPresetNameInput.focus();
+  });
+  faviconPresetSaveButton.addEventListener('click', () => {
+    const name = faviconPresetNameInput.value.trim();
+    const url = normalizeFaviconUrl(faviconPresetUrlInput.value.trim());
+    if (!name) {
+      faviconPresetNameInput.setCustomValidity('Enter a name for this preset.');
+      faviconPresetNameInput.reportValidity();
+      return;
+    }
+    if (!url) {
+      faviconPresetUrlInput.setCustomValidity('Enter a valid HTTP or HTTPS favicon URL.');
+      faviconPresetUrlInput.reportValidity();
+      return;
+    }
+
+    const preset = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, name, url };
+    localStorage.setItem(FAVICON_PRESETS_STORAGE_KEY, JSON.stringify([...getSavedFaviconPresets(), preset]));
+    renderSavedFaviconPresets();
+    faviconChoice.value = `saved:${preset.id}`;
+    customFaviconField.hidden = true;
+    customFaviconUrlInput.required = false;
+    faviconAddForm.hidden = true;
+    faviconAddToggle.setAttribute('aria-expanded', 'false');
+    faviconPresetNameInput.value = '';
+    faviconPresetUrlInput.value = '';
+    saveSettings();
+    settingsFeedback.textContent = `Favicon preset "${name}" added and applied.`;
+  });
+  faviconPresetNameInput.addEventListener('input', () => faviconPresetNameInput.setCustomValidity(''));
+  faviconPresetUrlInput.addEventListener('input', () => faviconPresetUrlInput.setCustomValidity(''));
+
+  searchSettingsForm.addEventListener('submit', saveSettings);
 }
 
 window.addEventListener('keydown', (event) => {
@@ -255,7 +421,9 @@ window.addEventListener('keydown', (event) => {
     if (keyInput) keyInput.value = capturedKey;
     isCapturingPanicKey = false;
     if (captureButton) captureButton.textContent = 'SET KEY';
-    if (captureStatus) captureStatus.textContent = `Shortcut key set to ${capturedKey}. Save settings to confirm.`;
+    if (captureStatus) captureStatus.textContent = `Shortcut key set to ${capturedKey}.`;
+    const form = document.getElementById('search-settings-form');
+    if (form) form.dispatchEvent(new Event('input', { bubbles: true }));
     return;
   }
 

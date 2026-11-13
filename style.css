@@ -1280,16 +1280,13 @@ button:hover {
 }
 
 @keyframes void-zero-fill {
-  0%, 45%, 62%, 100% {
+  0%, 10%, 50%, 54%, 100% {
     background-size: 100% 0%;
   }
-  10%, 13% {
+  3.33%, 6.67% {
     background-size: 100% 100%;
   }
-  23%, 48%, 54%, 65%, 71% {
-    background-size: 100% 0%;
-  }
-  51%, 68% {
+  51.33%, 52.67% {
     background-size: 100% 100%;
   }
 }
@@ -1312,33 +1309,33 @@ button:hover {
 }
 
 .void-panel .settings-description a:hover {
-  color: #effff4;
+  color: var(--theme-primary-text, #effff4);
 }
 
 .settings-back {
-  color: #9cb6a7;
+  color: var(--theme-secondary-text, #9cb6a7);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-decoration: none;
 }
 
 .settings-back:hover {
-  color: #91ffba;
+  color: var(--theme-accent, #61f99b);
 }
 
 .settings-panel {
   width: min(620px, 100%);
   margin: 2rem auto;
   padding: clamp(1.5rem, 5vw, 3rem);
-  border: 1px solid rgba(136, 255, 177, 0.2);
+  border: 1px solid var(--theme-soft-border, rgba(136, 255, 177, 0.2));
   border-radius: 14px;
-  background: rgba(8, 16, 11, 0.94);
+  background: var(--theme-panel-surface, rgba(8, 16, 11, 0.94));
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.4);
 }
 
 .settings-panel h1 {
   margin: 1rem 0 0;
-  color: #effff4;
+  color: var(--theme-primary-text, #effff4);
   font-size: clamp(1.7rem, 5vw, 2.4rem);
   letter-spacing: -0.04em;
   text-align: left;
@@ -1346,7 +1343,7 @@ button:hover {
 
 .settings-description {
   margin-top: 0.8rem;
-  color: #94a99a;
+  color: var(--theme-secondary-text, #94a99a);
   font-family: Arial, sans-serif;
   font-size: 0.9rem;
   line-height: 1.6;
@@ -1699,6 +1696,49 @@ button:hover {
 
 .appearance-fieldset {
   margin-top: 1.4rem;
+}
+
+.favicon-fieldset {
+  margin-top: 1.4rem;
+}
+
+.favicon-fieldset .theme-help a {
+  color: var(--theme-accent);
+  text-decoration-color: color-mix(in srgb, var(--theme-accent) 55%, transparent);
+  text-underline-offset: 0.15em;
+}
+
+.favicon-fieldset .theme-help a:hover {
+  color: color-mix(in srgb, var(--theme-accent) 75%, white);
+}
+
+.favicon-choice-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.favicon-choice-row select {
+  min-width: 0;
+  flex: 1;
+}
+
+.favicon-add-toggle {
+  width: 48px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--theme-accent, #61f99b) 35%, transparent);
+  border-radius: 8px;
+  background: var(--theme-panel-surface, #08110b);
+  color: var(--theme-accent, #61f99b);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.favicon-add-form {
+  margin-top: 0.75rem;
+}
+
+.favicon-preset-save {
+  margin-top: 0.65rem;
 }
 
 .appearance-options {

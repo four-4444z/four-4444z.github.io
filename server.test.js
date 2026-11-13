@@ -58,7 +58,7 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(dashboardHtml, /id="bookmark-add"/);
   assert.match(dashboardHtml, /id="bookmark-form"/);
   assert.match(dashboardHtml, /runtime-config\.js\?v=20261101-2/);
-  assert.match(dashboardHtml, /script\.js\?v=20261112-2/);
+  assert.match(dashboardHtml, /script\.js\?v=20261112-5/);
   assert.match(dashboardHtml, /style\.css\?v=20261012-9/);
   assert.match(dashboardHtml, /id="search-status"/);
   assert.match(dashboardHtml, /THROUGH SCRAMJET/);
@@ -88,13 +88,21 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(settingsPage, /id="search-engine"/);
   assert.match(settingsPage, /id="browser-profile"/);
   assert.match(settingsPage, /href="about\.html">ABOUT/);
-  assert.match(settingsPage, /script\.js\?v=20261112-2/);
+  assert.match(settingsPage, /script\.js\?v=20261112-5/);
+  assert.doesNotMatch(settingsPage, /SAVE SETTINGS/);
+  assert.match(settingsPage, /id="custom-page-title"/);
+  assert.match(settingsPage, /id="favicon-choice"/);
+  assert.match(settingsPage, /id="favicon-add-toggle"/);
+  assert.match(settingsPage, /id="custom-favicon-url"/);
+  assert.match(settingsPage, /id="favicon-preset-name"/);
+  assert.match(settingsPage, /id="favicon-preset-url"/);
+  assert.match(settingsPage, /href="https:\/\/favicon\.run\/"/);
   const suggestionsHtml = await (await fetch(`${baseUrl}/suggestions.html`, { headers })).text();
   assert.match(suggestionsHtml, /class="search-dashboard search-subpage has-global-footer"/);
   assert.match(suggestionsHtml, /id="suggestion-form"/);
   assert.match(suggestionsHtml, /href="about\.html">ABOUT/);
   assert.match(suggestionsHtml, /runtime-config\.js\?v=20261101-2/);
-  assert.match(suggestionsHtml, /script\.js\?v=20261112-2/);
+  assert.match(suggestionsHtml, /script\.js\?v=20261112-5/);
   assert.match(suggestionsHtml, /suggestions\.js\?v=20261101-3/);
   const runtimeConfig = await (await fetch(`${baseUrl}/runtime-config.js`, { headers })).text();
   assert.match(runtimeConfig, /SYSTEM_CORE_SCRAMJET_URL/);
@@ -111,6 +119,12 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.equal(libcurlRuntime.status, 200);
   assert.match(scramjetRuntime.headers.get('content-type'), /javascript/);
   const browserScript = await (await fetch(`${baseUrl}/script.js`, { headers })).text();
+  assert.match(browserScript, /favicon\.run\/favicon\?domain=canvas\.instructure\.com&sz=64/);
+  assert.match(browserScript, /favicon\.run\/favicon\?domain=google\.com&sz=48/);
+  assert.match(browserScript, /FAVICON_PRESETS_STORAGE_KEY/);
+  assert.match(browserScript, /function normalizeFaviconUrl\(value\)/);
+  assert.match(browserScript, /PAGE_TITLE_STORAGE_KEY/);
+  assert.match(browserScript, /function applyPageTitle\(\)/);
   assert.match(browserScript, /scramjet-embed\.html/);
   assert.match(browserScript, /async function updateRepositoryFooter\(\)/);
   assert.match(browserScript, /commits\?per_page=1/);
@@ -159,7 +173,7 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(notFoundHtml, /id="mobile-menu"/);
   assert.match(notFoundHtml, /<h1 class="void-face" id="void-title" aria-label="404">[\s\S]*?<span>4<\/span><span class="void-face-zero">0<\/span><span>4<\/span>/);
   assert.match(notFoundHtml, /You've reached the void\. To escape, try going back <a href="main\.html">home<\/a>\./);
-  assert.match(notFoundHtml, /script\.js\?v=20261112-2/);
+  assert.match(notFoundHtml, /script\.js\?v=20261112-5/);
   for (const page of [
     '/index.html', '/apply.html', '/main.html', '/about.html', '/settings.html', '/404.html',
     '/suggestions.html', '/shadow-core.html', '/shadow-login.html',
