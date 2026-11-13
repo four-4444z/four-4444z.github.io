@@ -52,6 +52,51 @@ function updateThemeSwatches(color) {
   });
 }
 
+async function updateRepositoryFooter() {
+  const commitTime = document.querySelector('[data-repository-commit-time]');
+  const commitLink = document.querySelector('[data-repository-commit]');
+  if (!commitTime || !commitLink) return;
+
+  try {
+    const response = await fetch(
+      'https://api.github.com/repos/four-4444z/four-4444z.github.io/commits?per_page=1',
+      { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' }
+    );
+    if (!response.ok) throw new Error(`GitHub returned HTTP ${response.status}.`);
+    const [latestCommit] = await response.json();
+    const sha = latestCommit?.sha;
+    const committedAt = latestCommit?.commit?.committer?.date;
+    const commitUrl = latestCommit?.html_url;
+    const timestamp = new Date(committedAt);
+    if (
+      typeof sha !== 'string' ||
+      !/^[a-f0-9]{40}$/i.test(sha) ||
+      !Number.isFinite(timestamp.getTime()) ||
+      typeof commitUrl !== 'string' ||
+      !commitUrl.startsWith('https://github.com/four-4444z/four-4444z.github.io/commit/')
+    ) {
+      throw new Error('GitHub returned invalid latest-commit data.');
+    }
+
+    commitTime.dateTime = timestamp.toISOString();
+    commitTime.textContent = new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(timestamp);
+    commitLink.href = commitUrl;
+    commitLink.textContent = sha.slice(0, 7);
+    commitLink.title = `View commit ${sha}`;
+  } catch (error) {
+    commitTime.textContent = 'Commit status unavailable';
+    commitLink.textContent = 'Retrying';
+    commitLink.title = error.message;
+  } finally {
+    window.setTimeout(updateRepositoryFooter, 60000);
+  }
+}
+
+void updateRepositoryFooter();
+
 applyTheme(getSavedThemeColor(), getSavedAppearance());
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (getSavedAppearance() === 'system') applyTheme(getSavedThemeColor(), 'system');
@@ -293,15 +338,6 @@ let scramjetHealthCheckedAt = 0;
 const systemCoreApiUrl = (window.SYSTEM_CORE_API_URL || '').replace(/\/+$/, '');
 const systemCoreScramjetUrl = window.SYSTEM_CORE_SCRAMJET_URL || '';
 
-function openSafariPhotoPage() {
-  const photoPageUrl = new URL('safari-photo.html', window.location.href);
-  const openedWindow = window.open(photoPageUrl.href, '_blank');
-  if (!openedWindow) {
-    throw new Error('Allow pop-ups to open the Safari page in a full browser tab.');
-  }
-  openedWindow.opener = null;
-}
-
 function createScramjetEmbedUrl(destination) {
   if (!scramjetBaseUrl) throw new Error('The embedded browser service is unavailable.');
   if (systemCoreScramjetUrl) {
@@ -440,11 +476,6 @@ clearBrowserTabsButton?.addEventListener('click', () => {
 async function openWithScramjet(query, tab, historyIndex = null) {
   const destination = resolveSearchDestination(query);
   try {
-    if (getBrowserProfile() === 'safari') {
-      openSafariPhotoPage();
-      browserStatus.textContent = 'Opened the Safari photo page in a full-page tab.';
-      return;
-    }
     browserStatus.textContent = 'Connecting to the embedded browser service...';
     await scramjetReady;
     if (!scramjetBaseUrl) throw new Error('The embedded browser service is unavailable.');
@@ -656,15 +687,6 @@ browserRefreshButton?.addEventListener('click', async () => {
 browserOpenTabButton?.addEventListener('click', async () => {
   const tab = browserTabs.find(({ id }) => id === activeBrowserTabId);
   if (!tab?.url) return;
-  if (getBrowserProfile() === 'safari') {
-    try {
-      openSafariPhotoPage();
-      browserStatus.textContent = 'Opened the Safari photo page in a full-page tab.';
-    } catch (error) {
-      browserStatus.textContent = error.message;
-    }
-    return;
-  }
   const openedWindow = window.open('about:blank', '_blank');
   if (!openedWindow) {
     browserStatus.textContent = 'Allow pop-ups to open this page in a full browser tab.';
@@ -761,26 +783,73 @@ function ensureScramjetServiceReady(serviceUrl) {
   return scramjetHealthCheck;
 }
 
-scramjetReady = (systemCoreScramjetUrl
-  ? Promise.resolve({ scramjetUrl: systemCoreScramjetUrl })
-  : fetch(`${systemCoreApiUrl}/health`).then((response) => {
-      if (!response.ok) throw new Error('The browser service is unavailable.');
-      return response.json();
-    }))
-    .then(({ scramjetPort: port, scramjetUrl }) => {
+async function waitForScramjetConfiguration() {
+  const profile = BROWSER_PROFILES[getBrowserProfile()];
+  if (window.location.protocol === 'file:') {
+    throw new Error('Open this page through the local server: run npm start, then visit http://localhost:5000.');
+  }
+  if (systemCoreScramjetUrl) {
+    const serviceUrl = new URL(systemCoreScramjetUrl);
+    if (!['http:', 'https:'].includes(serviceUrl.protocol)) {
+      throw new Error('The embedded browser service URL is invalid.');
+    }
+    scramjetBaseUrl = serviceUrl.origin;
+    return scramjetBaseUrl;
+  }
+
+  const deadline = Date.now() + profile.startupTimeout;
+  const healthUrl = systemCoreApiUrl ? `${systemCoreApiUrl}/health` : '/health';
+  let lastError = new Error('The service did not respond.');
+
+  while (Date.now() < deadline) {
+    const remaining = deadline - Date.now();
+    const controller = new AbortController();
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      Math.min(profile.requestTimeout, remaining)
+    );
+    let response;
+    try {
+      response = await fetch(healthUrl, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+    } catch (error) {
+      lastError = error.name === 'AbortError'
+        ? new Error('The service health check timed out.')
+        : error;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+
+    if (response?.ok) {
+      const { scramjetPort: port, scramjetUrl } = await response.json();
       if (typeof scramjetUrl === 'string') {
         const serviceUrl = new URL(scramjetUrl);
         if (!['http:', 'https:'].includes(serviceUrl.protocol)) {
           throw new Error('The embedded browser service URL is invalid.');
         }
         scramjetBaseUrl = serviceUrl.origin;
-      } else if (Number.isInteger(port) && port >= 1 && port <= 65535) {
-        scramjetBaseUrl = `http://${window.location.hostname}:${port}`;
-      } else {
-        throw new Error('The embedded browser service is unavailable.');
+        return scramjetBaseUrl;
       }
-      return scramjetBaseUrl;
-    });
+      if (Number.isInteger(port) && port >= 1 && port <= 65535) {
+        scramjetBaseUrl = `http://${window.location.hostname}:${port}`;
+        return scramjetBaseUrl;
+      }
+      throw new Error('The browser service returned an invalid configuration.');
+    }
+    if (response) lastError = new Error(`The service returned HTTP ${response.status}.`);
+
+    const delay = Math.min(profile.retryInterval, deadline - Date.now());
+    if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
+  }
+
+  throw new Error(
+    `The browser service did not provide configuration within ${profile.startupTimeout / 1000} seconds. ${lastError.message}`
+  );
+}
+
+scramjetReady = waitForScramjetConfiguration();
 void scramjetReady.catch((error) => {
   if (browserStatus) browserStatus.textContent = error.message;
 });
@@ -803,19 +872,14 @@ if (searchForm) {
     }
 
     searchButton.disabled = true;
-    const usesSafariPhotoPage = getBrowserProfile() === 'safari';
-    searchStatus.textContent = usesSafariPhotoPage
-      ? 'Opening the Safari photo page...'
-      : 'Opening the embedded browser...';
+    searchStatus.textContent = 'Opening the embedded browser...';
     const activeTab = browserTabs.find(({ id }) => id === activeBrowserTabId);
     const tab = activeTab && activeTab.historyIndex < 0
       ? activeTab
       : addBrowserTab(new URL(destination).hostname);
     try {
       await openWithScramjet(query, tab);
-      searchStatus.textContent = usesSafariPhotoPage
-        ? 'The Safari photo page opened in a full-page tab.'
-        : 'Your site opened in an embedded browser tab.';
+      searchStatus.textContent = 'Your site opened in an embedded browser tab.';
       searchButton.disabled = false;
     } catch (error) {
       searchStatus.textContent = error.message;

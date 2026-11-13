@@ -31,6 +31,8 @@ The Render blueprint deploys separate API, Scramjet, and Rammerhead services.
 For local development with Safari support, install Rammerhead's dependencies with
 `npm run setup:rammerhead` before starting CORE_SEARCH. The local Rammerhead
 service runs on port 8082; other browser profiles continue to use Scramjet.
+For other local development, run `npm start` and open `http://localhost:5000`;
+opening `main.html` directly as a `file://` URL cannot connect to the services.
 
 ## Technology Stack
 

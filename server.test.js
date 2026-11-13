@@ -58,7 +58,7 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(dashboardHtml, /id="bookmark-add"/);
   assert.match(dashboardHtml, /id="bookmark-form"/);
   assert.match(dashboardHtml, /runtime-config\.js\?v=20261101-2/);
-  assert.match(dashboardHtml, /script\.js\?v=20261101-3/);
+  assert.match(dashboardHtml, /script\.js\?v=20261112-2/);
   assert.match(dashboardHtml, /style\.css\?v=20261012-9/);
   assert.match(dashboardHtml, /id="search-status"/);
   assert.match(dashboardHtml, /THROUGH SCRAMJET/);
@@ -74,7 +74,9 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(dashboardHtml, /id="dashboard-browser-open-tab"/);
   assert.match(dashboardHtml, /id="dashboard-browser-address-form"/);
   assert.match(dashboardHtml, /CORE_SEARCH v1\.3\.2/);
-  assert.match(dashboardHtml, /2026-11-01/);
+  assert.match(dashboardHtml, /data-repository-commit-time/);
+  assert.match(dashboardHtml, /data-repository-commit href="https:\/\/github\.com\/four-4444z\/four-4444z\.github\.io\/commits"/);
+  assert.match(dashboardHtml, /data-repository-commit-time/);
   assert.match(dashboardHtml, /RUN BY THE SHADOW NETWORK/);
   assert.match(dashboardHtml, /suggestions\.html/);
   assert.match(dashboardHtml, /href="about\.html">ABOUT/);
@@ -86,13 +88,13 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(settingsPage, /id="search-engine"/);
   assert.match(settingsPage, /id="browser-profile"/);
   assert.match(settingsPage, /href="about\.html">ABOUT/);
-  assert.match(settingsPage, /script\.js\?v=20261101-3/);
+  assert.match(settingsPage, /script\.js\?v=20261112-2/);
   const suggestionsHtml = await (await fetch(`${baseUrl}/suggestions.html`, { headers })).text();
   assert.match(suggestionsHtml, /class="search-dashboard search-subpage has-global-footer"/);
   assert.match(suggestionsHtml, /id="suggestion-form"/);
   assert.match(suggestionsHtml, /href="about\.html">ABOUT/);
   assert.match(suggestionsHtml, /runtime-config\.js\?v=20261101-2/);
-  assert.match(suggestionsHtml, /script\.js\?v=20261101-3/);
+  assert.match(suggestionsHtml, /script\.js\?v=20261112-2/);
   assert.match(suggestionsHtml, /suggestions\.js\?v=20261101-3/);
   const runtimeConfig = await (await fetch(`${baseUrl}/runtime-config.js`, { headers })).text();
   assert.match(runtimeConfig, /SYSTEM_CORE_SCRAMJET_URL/);
@@ -110,22 +112,18 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   assert.match(scramjetRuntime.headers.get('content-type'), /javascript/);
   const browserScript = await (await fetch(`${baseUrl}/script.js`, { headers })).text();
   assert.match(browserScript, /scramjet-embed\.html/);
+  assert.match(browserScript, /async function updateRepositoryFooter\(\)/);
+  assert.match(browserScript, /commits\?per_page=1/);
+  assert.match(browserScript, /window\.setTimeout\(updateRepositoryFooter, 60000\)/);
   assert.match(browserScript, /wispUrl\.href/);
   assert.match(browserScript, /waitForScramjetService/);
-  assert.match(browserScript, /getBrowserProfile\(\) === 'safari'/);
-  assert.match(browserScript, /openSafariPhotoPage/);
-  assert.match(browserScript, /safari-photo\.html/);
+  assert.match(browserScript, /async function waitForScramjetConfiguration\(\)/);
+  assert.match(browserScript, /window\.location\.protocol === 'file:'/);
+  assert.match(browserScript, /run npm start, then visit http:\/\/localhost:5000/);
+  assert.match(browserScript, /cache: 'no-store',\s+signal: controller\.signal/);
+  assert.match(browserScript, /The browser service did not provide configuration within/);
   assert.match(browserScript, /browserProfileSelect\.addEventListener\('change'/);
   assert.match(browserScript, /localStorage\.setItem\(BROWSER_PROFILE_STORAGE_KEY, browserProfileSelect\.value\)/);
-  const safariPhotoPage = await (await fetch(`${baseUrl}/safari-photo.html`, { headers })).text();
-  assert.match(safariPhotoPage, /<img src="safari-photo\.png" alt="Screenshot of the Rammerhead browser page">/);
-  const safariPhoto = await fetch(`${baseUrl}/safari-photo.png`, { headers });
-  assert.equal(safariPhoto.status, 200);
-  assert.match(safariPhoto.headers.get('content-type'), /image\/png/);
-  assert.deepEqual(
-    [...new Uint8Array(await safariPhoto.arrayBuffer()).slice(0, 8)],
-    [137, 80, 78, 71, 13, 10, 26, 10]
-  );
   assert.match(fs.readFileSync('rammerhead-launch.html', 'utf8'), /newsession/);
   assert.match(fs.readFileSync('rammerhead-start.js', 'utf8'), /core-search-launch/);
   const suggestionScript = await (await fetch(`${baseUrl}/suggestions.js`, { headers })).text();
@@ -159,8 +157,9 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   const notFoundHtml = await (await fetch(`${baseUrl}/404.html`, { headers })).text();
   assert.match(notFoundHtml, /id="matrix-canvas"/);
   assert.match(notFoundHtml, /id="mobile-menu"/);
+  assert.match(notFoundHtml, /<h1 class="void-face" id="void-title" aria-label="404">[\s\S]*?<span>4<\/span><span class="void-face-zero">0<\/span><span>4<\/span>/);
   assert.match(notFoundHtml, /You've reached the void\. To escape, try going back <a href="main\.html">home<\/a>\./);
-  assert.match(notFoundHtml, /script\.js\?v=20261101-3/);
+  assert.match(notFoundHtml, /script\.js\?v=20261112-2/);
   for (const page of [
     '/index.html', '/apply.html', '/main.html', '/about.html', '/settings.html', '/404.html',
     '/suggestions.html', '/shadow-core.html', '/shadow-login.html',
@@ -169,7 +168,7 @@ test('redirects the entry page to the dashboard and reports the active proxy por
   ]) {
     const html = fs.readFileSync(page.slice(1), 'utf8');
     assert.match(html, /CORE_SEARCH v1\.3\.2/, `${page} includes the current version`);
-    assert.match(html, /2026-11-01|NOVEMBER 1, 2026/, `${page} includes the release date`);
+    assert.match(html, /data-repository-commit-time|2026-11-01|NOVEMBER 1, 2026/, `${page} includes a date or live commit time`);
     assert.match(html, /RUN BY THE SHADOW NETWORK/, `${page} includes the network credit`);
   }
   for (const page of ['/browser.html', '/browser.js', '/youtube.html', '/chat.html', '/strongdog.html', '/games.html', '/entertainment.html']) {
